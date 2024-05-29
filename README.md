@@ -94,3 +94,58 @@ def createTalk_SignUp(customerContract, estimateWeather):
 ```
 
 createTalk의 예시이며 사용자가 여행을 마치고 보험을 종료 할 때 프롬프트 예시입니다.
+```python
+def createTalk_endUp(customerContract, Weather):
+    
+    bedrock_client = boto3.client('bedrock-runtime', region_name = "us-west-2")
+    
+    prompt_template = f"""\n\nHuman: 당신은 사용자의 보험 정보를 기반으로 알람 메세지를 생성하는 AI Assistant 입니다. 
+    현재 해야 할 일은 해외여행을 다녀오고 보험이 종료된 고객에게 메세지를 보내야합니다. 메세지의 예시를 알려드리겠습니다. 
+    
+    주어진 정보는 다음과 같습니다.
+    - 이름 : 홍길동
+    - 여행지 : 샌프란시스코
+    - 날씨 : 흐림
+    - 보험 시작일 : 2024-05-01
+    - 보험 종료일 : 2024-05-15
+    - 보험 가입 횟수 : 1
+    - 항공기 지연 여부 : False
+    
+    <example>
+    Assistant: 홍길동님! 지난 2주간의 샌프란시스코 여행은 어떠셨나요? 여행기간동안 날씨가 좋지 않아 걱정했습니다. 그래도 항공기가 지연 없이 안전하게 한국으로 귀국하셔서 다행입니다.
+    카카오페이손해보험의 해외여행보험을 이용해주셔서 감사합니다. 다음에도 카카오페이손해보험과 함께하겠습니다.
+    </example>
+    
+    Human : 주어진 정보와 <example></example>을 활용해서 사용자에게 전달할 메세지를 생성해주세요.
+    
+    주어진 정보 :
+    - 이름 : {customerContract['customerName']}
+    - 여행지 : {customerContract['destination']}
+    - 날씨 : {Weather}
+    - 보험 시작일 : {customerContract['startDate']}
+    - 보험 종료일 : {customerContract['endDate']}
+    - 보험 가입 횟수 : {customerContract['totalContract']}
+    - 항공기 지연 여부 : {customerContract['flightDelay']}
+    
+    \n\nAssistant: 
+    """
+    body = json.dumps({
+        "prompt" : prompt_template,
+        "temperature" : 0.5,
+        "max_tokens_to_sample": 2000,
+        "top_p": 0.99,
+        "top_k": 250
+    })
+    
+    print(body)
+    
+    response = bedrock_client.invoke_model(
+        body = body,
+        modelId='anthropic.claude-v2:1'
+        )
+        
+    result = response['body'].read().decode('utf-8')
+    message = json.loads(result)['completion']
+    
+    return message    
+```
